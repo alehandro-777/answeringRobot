@@ -1,197 +1,127 @@
-// get the reference of EventEmitter class of events module
-var events = require('events');
+// Include Nodejs' net module.
+const Net = require('net');
+const player = require('play-sound')(opts = {})
 
-class State {
-    constructor (name) {
-        this.name = name;
-    }
-    stateChanging(sm, newState)
-    {
-        sm.em.emit('StateChanging', {from : sm.state, to : newState});
-        let old = sm.state;
-        sm.state = newState; 
-        sm.em.emit('StateChanged', {from : old, to : newState});
+// The port on which the server is listening.
+const port = 8080;
 
-    }
-    ring(sm) {
-    }
-    noCarrier(sm) {
-    }
-    press1(sm) {
-    }
-    press2(sm) {
-    }
-    press3(sm) {
-    }
-    press4(sm) {
-    }
-    press5(sm) {
-    }
-    press6(sm) {
-    }
-    press7(sm) {
-    }
-    press8(sm) {
-    }
-    press9(sm) {
-    }
-    press0(sm) {
-    }
-}
+const SerialPort = require('serialport')
+const Readline = require('@serialport/parser-readline')
 
+const com = new SerialPort('/dev/ttyS3', { baudRate: 115200, autoOpen: false})
 
-//исходное состояние - ожидание звонка, трубка опущена, нет проигрывания файла
-class State0 extends State {
-   constructor () {
-        super("0");
-   }
-    ring(sm) {
-        super.stateChanging(sm, new State1());
-    }
-}
+const stateMaschine =  require('./state-maschine')
 
-//проигрывание основого меню 1, переход в пункты 1..9, 0 - прослушать еще раз
-class State1 extends State {
-    constructor () {
-         super("1");
-    }
-    ring(sm) {
-        super.stateChanging(sm, new State1());
-    }
-     noCarrier(sm) {
-        super.stateChanging(sm, new State0());
-     }
-     press1(sm) {
-        super.stateChanging(sm, new State1_1());
-     }
-     press2(sm) {
-        super.stateChanging(sm, new State1_2());
-     }
-     press3(sm) {
-        super.stateChanging(sm, new State1_3());
-     }
-     press0(sm) {
-        super.stateChanging(sm, new State1());
-     }
- }
+const parser = new Readline()
+com.pipe(parser)
 
- //выполнение пункта 1.1
- class State1_1 extends State {
-    constructor () {
-         super("1.1");
+com.open(function (err) {
+    if (err) {
+      console.log('Error opening port: ', err.message);
+      process.exit(0);
     }
-    ring(sm) {
-        super.stateChanging(sm, new State1());
-    }
-    press1(sm) {
-        super.stateChanging(sm, new State1_1());
-     }
-     noCarrier(sm) {
-        super.stateChanging(sm, new State0());
-     }
-     press0(sm) {
-        super.stateChanging(sm, new State1());
-     }
- }
- //выполнение пункта 1.2
- class State1_2 extends State {
-    constructor () {
-         super("1.2");
-    }
-    ring(sm) {
-        super.stateChanging(sm, new State1());
-    }
-     press2(sm) {
-        super.stateChanging(sm, new State1_2());
-     }
-     noCarrier(sm) {
-        super.stateChanging(sm, new State0());
-     }
-     press0(sm) {
-        super.stateChanging(sm, new State1());
-     }
- }
- //выполнение пункта 1.1
- class State1_3 extends State {
-    constructor () {
-         super("1.3");
-    }
-    ring(sm) {
-        super.stateChanging(sm, new State1());
-    }
-     press3(sm) {
-        super.stateChanging(sm, new State1_3());
-     }
-     noCarrier(sm) {
-        super.stateChanging(sm, new State0());
-     }
-     press0(sm) {
-        super.stateChanging(sm, new State1());
-     }
- }
- 
+  })
+  
+  // The open event is always emitted
+  com.on('open', function() {
+    // open logic
+    console.log('COM opened OK ')
+  })
+
+const stateM = stateMaschine.create();
+let audio;
+
+// Use net.createServer() in your code. This is just for illustration purpose.
+// Create a new TCP server.
+const server = new Net.Server();
+// The server listens to a socket for a client to make a connection request.
+// Think of a socket as an end point.
+server.listen(port, function() {
+    console.log(`Server listening for connection requests on socket localhost:${port}`);
+});
+
+// When a client requests a connection with the server, the server creates a new
+// socket dedicated to that client.
+server.on('connection', function(socket) {
+
+    console.log('A new connection has been established.');
+    com.write("AT\n");
+    com.write("AT+DDET=1\n");
+    
+    com.on('data', function (data) {
+    // Now that a TCP connection has been established, the server can send data to
+    // the client by writing to its socket.
+    socket.write(data);
+    console.log(`Data send to client: ${data.toString()}`);
+    });
+
+    // The server can also receive data from the client by reading from its socket.
+    socket.on('data', function(chunk) {
+        console.log(`Data received from client: ${chunk.toString()}`);
+        com.write(chunk);
+    });
+
+    // When the client requests to end the TCP connection with the server, the server
+    // ends the connection.
+    socket.on('end', function() {
+        console.log('Closing connection with the client');
+    });
+
+    // Don't forget to catch error, for your own sake.
+    socket.on('error', function(err) {
+        console.log(`Error: ${err}`);
+    });
+});
 
 
-
-class SM {
-    constructor ( initState ) {
-        this.state = initState;
-        this.em = new events.EventEmitter(); 
+parser.on('data', function(line){ 
+        if (line.includes("+DTMF: 0")){
+            stateM.press0();
+        }
+        if (line.includes("+DTMF: 1")){
+            stateM.press1();
+        }
+        if (line.includes("+DTMF: 2")){
+            stateM.press2();
+        }
+        if (line.includes("RING")){
+            stateM.ring();
+        }
+        if (line.includes("NO CARRIER")){
+            stateM.noCarrier();
+        }        
     }
-    ring() {
-        this.state.ring(this);
-    }
-    noCarrier() {
-        this.state.noCarrier(this);
-    }
-    press1() {
-        this.state.press1(this);
-    }
-    press2() {
-        this.state.press2(this);
-    }
-    press3() {
-        this.state.press3(this);
-    }
-    press4() {
-        this.state.press4(this);
-    }
-    press5() {
-        this.state.press5(this);
-    }
-    press6() {
-        this.state.press6(this);
-    }
-    press7() {
-        this.state.press7(this);
-    }
-    press8() {
-        this.state.press8(this);
-    }
-    press9() {
-        this.state.press9(this);
-    }
-    press0() {
-        this.state.press0(this);
-    }
-}
+    );
 
 
-let testSM = new SM(new State0() );
-
-testSM.em.on('StateChanged', function (data) {
+stateM.em.on('StateChanged', function (data) {
     console.log('onStateChanging: ', data.from.name,"->", data.to.name);
     
     //init reset
     if (data.to.name==="0"){
-
+        com.write("ATH0\n");
     }
+    //play 1
+    if (data.to.name==="1"){
+        if (audio) audio.kill();
+        //com.write("AT\n");
+        //com.write("AT+DDET=1\n");
+        com.write("ATA\n");
+        audio = player.play('1.mp3', function(err){ if (err && !err.killed) console.log(err)	});    
+    }    
     //play 1.1
     if (data.to.name==="1.1"){
-        
+        if (audio) audio.kill();
+        audio = player.play('2.mp3', function(err){ if (err && !err.killed) console.log(err)	});    
     }
-
+    //play 1.2
+    if (data.to.name==="1.2"){
+        if (audio) audio.kill();
+        audio = player.play('3.mp3', function(err){ if (err && !err.killed) console.log(err)	});    
+    }
+    //play 1.3
+    if (data.to.name==="1.3"){
+        if (audio) audio.kill();
+        audio = player.play('3.mp3', function(err){ if (err && !err.killed) console.log(err)	});    
+    }
 });  
-
-
-let timerId = setInterval(() => testSM.ring(), 2000);
