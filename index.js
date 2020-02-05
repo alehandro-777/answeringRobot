@@ -13,46 +13,124 @@ class State {
         sm.em.emit('StateChanged', {from : old, to : newState});
 
     }
-    moveUp () {
+    ring(sm) {
     }
-    moveDown () {
+    noCarrier(sm) {
+    }
+    press1(sm) {
+    }
+    press2(sm) {
+    }
+    press3(sm) {
+    }
+    press4(sm) {
+    }
+    press5(sm) {
+    }
+    press6(sm) {
+    }
+    press7(sm) {
+    }
+    press8(sm) {
+    }
+    press9(sm) {
+    }
+    press0(sm) {
     }
 }
 
-class StateA extends State {
+
+//исходное состояние - ожидание звонка, трубка опущена, нет проигрывания файла
+class State0 extends State {
    constructor () {
-        super("A");
+        super("0");
    }
-   moveUp (sm) {
-        super.stateChanging(sm, new StateB());
-   }
-    moveDown (sm) {
-        super.stateChanging(sm, new StateC());
-   }
+    ring(sm) {
+        super.stateChanging(sm, new State1());
+    }
 }
-class StateB extends State {
+
+//проигрывание основого меню 1, переход в пункты 1..9, 0 - прослушать еще раз
+class State1 extends State {
     constructor () {
-        super("B");
+         super("1");
     }
-    moveUp (sm) {
-        super.stateChanging(sm, new StateC());
-      }
-     moveDown (sm) {
-        super.stateChanging(sm, new StateA());
-      }
-  }
- class StateC extends State {
+    ring(sm) {
+        super.stateChanging(sm, new State1());
+    }
+     noCarrier(sm) {
+        super.stateChanging(sm, new State0());
+     }
+     press1(sm) {
+        super.stateChanging(sm, new State1_1());
+     }
+     press2(sm) {
+        super.stateChanging(sm, new State1_2());
+     }
+     press3(sm) {
+        super.stateChanging(sm, new State1_3());
+     }
+     press0(sm) {
+        super.stateChanging(sm, new State1());
+     }
+ }
+
+ //выполнение пункта 1.1
+ class State1_1 extends State {
     constructor () {
-        super("C");
+         super("1.1");
     }
-    moveUp (sm) {
-        super.stateChanging(sm, new StateA());
-      }
-     moveDown (sm) {
-        super.stateChanging(sm, new StateB());
-      }
-  }
+    ring(sm) {
+        super.stateChanging(sm, new State1());
+    }
+    press1(sm) {
+        super.stateChanging(sm, new State1_1());
+     }
+     noCarrier(sm) {
+        super.stateChanging(sm, new State0());
+     }
+     press0(sm) {
+        super.stateChanging(sm, new State1());
+     }
+ }
+ //выполнение пункта 1.2
+ class State1_2 extends State {
+    constructor () {
+         super("1.2");
+    }
+    ring(sm) {
+        super.stateChanging(sm, new State1());
+    }
+     press2(sm) {
+        super.stateChanging(sm, new State1_2());
+     }
+     noCarrier(sm) {
+        super.stateChanging(sm, new State0());
+     }
+     press0(sm) {
+        super.stateChanging(sm, new State1());
+     }
+ }
+ //выполнение пункта 1.1
+ class State1_3 extends State {
+    constructor () {
+         super("1.3");
+    }
+    ring(sm) {
+        super.stateChanging(sm, new State1());
+    }
+     press3(sm) {
+        super.stateChanging(sm, new State1_3());
+     }
+     noCarrier(sm) {
+        super.stateChanging(sm, new State0());
+     }
+     press0(sm) {
+        super.stateChanging(sm, new State1());
+     }
+ }
  
+
 
 
 class SM {
@@ -60,21 +138,60 @@ class SM {
         this.state = initState;
         this.em = new events.EventEmitter(); 
     }
-    moveUp () {
-        this.state.moveUp(this);
+    ring() {
+        this.state.ring(this);
     }
-    moveDown () {
-        this.state.moveDown(this);
+    noCarrier() {
+        this.state.noCarrier(this);
+    }
+    press1() {
+        this.state.press1(this);
+    }
+    press2() {
+        this.state.press2(this);
+    }
+    press3() {
+        this.state.press3(this);
+    }
+    press4() {
+        this.state.press4(this);
+    }
+    press5() {
+        this.state.press5(this);
+    }
+    press6() {
+        this.state.press6(this);
+    }
+    press7() {
+        this.state.press7(this);
+    }
+    press8() {
+        this.state.press8(this);
+    }
+    press9() {
+        this.state.press9(this);
+    }
+    press0() {
+        this.state.press0(this);
     }
 }
 
 
-let testSM = new SM(new StateA() );
+let testSM = new SM(new State0() );
 
 testSM.em.on('StateChanged', function (data) {
     console.log('onStateChanging: ', data.from.name,"->", data.to.name);
+    
+    //init reset
+    if (data.to.name==="0"){
+
+    }
+    //play 1.1
+    if (data.to.name==="1.1"){
+        
+    }
+
 });  
 
-debugger;
 
-let timerId = setInterval(() => testSM.moveUp(), 2000);
+let timerId = setInterval(() => testSM.ring(), 2000);
