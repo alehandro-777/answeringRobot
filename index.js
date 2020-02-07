@@ -84,6 +84,9 @@ parser.on('data', function(line){
         if (line.includes("+DTMF: 2")){
             stateM.press2();
         }
+        if (line.includes("+DTMF: 3")){
+            stateM.press3();
+        }
         if (line.includes("RING")){
             stateM.ring();
         }
@@ -99,29 +102,27 @@ stateM.em.on('StateChanged', function (data) {
     
     //init reset
     if (data.to.name==="0"){
-        com.write("ATH0\n");
+        //com.write("ATH0\n");
     }
     //play 1
-    if (data.to.name==="1"){
+    if ( data.to.name==="1"){
         if (audio) audio.kill();
-        //com.write("AT\n");
-        //com.write("AT+DDET=1\n");
         com.write("ATA\n");
-        audio = player.play('1.mp3', function(err){ if (err && !err.killed) console.log(err)	});    
+        setTimeout(function(){ audio = player.play('1.mp3', function(err){ }); }, 500);    
     }    
     //play 1.1
     if (data.to.name==="1.1"){
         if (audio) audio.kill();
-        audio = player.play('2.mp3', function(err){ if (err && !err.killed) console.log(err)	});    
+        setTimeout(function(){ audio = player.play('2.mp3', function(err){ }); }, 500);
     }
     //play 1.2
     if (data.to.name==="1.2"){
         if (audio) audio.kill();
-        audio = player.play('3.mp3', function(err){ if (err && !err.killed) console.log(err)	});    
+        setTimeout(function(){ audio = player.play('3.mp3', function(err){ }); }, 500);    
     }
     //play 1.3
     if (data.to.name==="1.3"){
         if (audio) audio.kill();
-        audio = player.play('3.mp3', function(err){ if (err && !err.killed) console.log(err)	});    
+        setTimeout(function(){ audio = player.play('3.mp3', function(err){ }); }, 500);   
     }
 });  
